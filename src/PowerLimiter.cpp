@@ -214,9 +214,18 @@ void PowerLimiterClass::loop()
 
     // since _lastCalculation and _calculationBackoffMs are initialized to
     // zero, this test is passed the first time the condition is checked.
-    if ((millis() - _lastCalculation) < _calculationBackoffMs) {
+    //if ((millis() - _lastCalculation) < _calculationBackoffMs) {
+    //    return announceStatus(Status::Stable);
+    //}
+// --- UNSERE KÜNSTLICHE ZWANGSPAUSE GEGEN TOTZEITEN ---
+    static uint32_t lastMyDplTick = 0;
+    // 8000 Millisekunden = 8 Sekunden absolute Ruhe für den Regelkreis
+    if (millis() - lastMyDplTick < 8000) {
         return announceStatus(Status::Stable);
     }
+    lastMyDplTick = millis();
+    // --- ENDE DER BREMSE ---
+
 
     auto autoRestartInverters = [this]() -> void {
         if (!_nextInverterRestart.first) { return; } // no automatic restarts
@@ -628,11 +637,11 @@ float alpha;
 if (targetOutput < filteredPower) {
     // SPRECHWEISE: Neuer Sollwert ist NIEDRIGER als der alte -> Verbraucher wurde eingeschaltet!
     // Schnelles Runterrampen: Ein Wert von 0.85 reagiert fast sofort (bzw. 1.0 für 100% Echtzeit)
-    alpha = 0.01f; 
+    alpha = 0.02f; 
 } else {
     // SPRECHWEISE: Neuer Sollwert ist HÖHER als der alte -> Überschuss steigt, Lader soll hochfahren.
     // Langsames Hochrampen: Ein kleiner Wert von 0.15 filtert den Anstieg stark und macht ihn träge.
-    alpha = 0.01f; 
+    alpha = 0.02f; 
 }
 
 // Berechnung des asymmetrisch gedämpften Sollwerts
