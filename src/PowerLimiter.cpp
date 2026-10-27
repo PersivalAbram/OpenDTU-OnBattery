@@ -612,6 +612,35 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     // power to the grid using generators other than DPL-governed inverters.
     int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
 
+
+// Am Ende der Berechnungsfunktion, bevor das neue Limit für den Lader final übernommen wird:
+static float filteredPower = -1.0f; // Merkt sich den gefilterten Wert über Schleifendurchläufe hinweg
+
+// Beim allerersten Start den aktuellen Ist-Wert als Startpunkt setzen
+if (filteredPower < 0) {
+    filteredPower = targetOutput; 
+}
+
+// Dynamischen Dämpfungsfaktor deklarieren
+float alpha;
+
+if (targetPower < filteredPower) {
+    // SPRECHWEISE: Neuer Sollwert ist NIEDRIGER als der alte -> Verbraucher wurde eingeschaltet!
+    // Schnelles Runterrampen: Ein Wert von 0.85 reagiert fast sofort (bzw. 1.0 für 100% Echtzeit)
+    alpha = 0.85f; 
+} else {
+    // SPRECHWEISE: Neuer Sollwert ist HÖHER als der alte -> Überschuss steigt, Lader soll hochfahren.
+    // Langsames Hochrampen: Ein kleiner Wert von 0.15 filtert den Anstieg stark und macht ihn träge.
+    alpha = 0.15f; 
+}
+
+// Berechnung des asymmetrisch gedämpften Sollwerts
+filteredPower = (alpha * targetPower) + ((1.0f - alpha) * filteredPower);
+
+// Überschribe den Zielwert mit dem gefilterten Wert
+targetOutput = (int16_t)filteredPower;
+    
+
     // if we are already exporting more power than the (negative) target
     // consumption value allows us to, we don't want DPL-governed inverters to
     // produce any power at all.
