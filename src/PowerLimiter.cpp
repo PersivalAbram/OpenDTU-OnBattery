@@ -628,11 +628,11 @@ float alpha;
 if (targetOutput < filteredPower) {
     // SPRECHWEISE: Neuer Sollwert ist NIEDRIGER als der alte -> Verbraucher wurde eingeschaltet!
     // Schnelles Runterrampen: Ein Wert von 0.85 reagiert fast sofort (bzw. 1.0 für 100% Echtzeit)
-    alpha = 0.85f; 
+    alpha = 0.5f; 
 } else {
     // SPRECHWEISE: Neuer Sollwert ist HÖHER als der alte -> Überschuss steigt, Lader soll hochfahren.
     // Langsames Hochrampen: Ein kleiner Wert von 0.15 filtert den Anstieg stark und macht ihn träge.
-    alpha = 0.15f; 
+    alpha = 0.05f; 
 }
 
 // Berechnung des asymmetrisch gedämpften Sollwerts
