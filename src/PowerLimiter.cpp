@@ -552,7 +552,6 @@ uint8_t PowerLimiterClass::getPowerLimiterState() const
         ? PL_UI_STATE_USE_SOLAR_AND_BATTERY : PL_UI_STATE_USE_SOLAR_ONLY;
 }
 
-
 uint16_t PowerLimiterClass::calcTargetOutput() const
 {
     auto const& config = Configuration.get();
@@ -615,9 +614,10 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
 
 
 // Am Ende der Berechnungsfunktion, bevor das neue Limit für den Lader final übernommen wird:
-static float filteredPower = -1.0f; // Merkt sich den gefilterten Wert über Schleifendurchläufe hinweg
+
 
 // Beim allerersten Start den aktuellen Ist-Wert als Startpunkt setzen
+static float filteredPower = -1.0f; // Merkt sich den gefilterten Wert über Schleifendurchläufe hinweg
 if (filteredPower < 0) {
     filteredPower = targetOutput; 
 }
@@ -628,11 +628,11 @@ float alpha;
 if (targetOutput < filteredPower) {
     // SPRECHWEISE: Neuer Sollwert ist NIEDRIGER als der alte -> Verbraucher wurde eingeschaltet!
     // Schnelles Runterrampen: Ein Wert von 0.85 reagiert fast sofort (bzw. 1.0 für 100% Echtzeit)
-    alpha = 0.5f; 
+    alpha = 0.02f; 
 } else {
     // SPRECHWEISE: Neuer Sollwert ist HÖHER als der alte -> Überschuss steigt, Lader soll hochfahren.
     // Langsames Hochrampen: Ein kleiner Wert von 0.15 filtert den Anstieg stark und macht ihn träge.
-    alpha = 0.05f; 
+    alpha = 0.02f; 
 }
 
 // Berechnung des asymmetrisch gedämpften Sollwerts
