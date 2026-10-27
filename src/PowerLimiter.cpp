@@ -552,6 +552,7 @@ uint8_t PowerLimiterClass::getPowerLimiterState() const
         ? PL_UI_STATE_USE_SOLAR_AND_BATTERY : PL_UI_STATE_USE_SOLAR_ONLY;
 }
 
+
 uint16_t PowerLimiterClass::calcTargetOutput() const
 {
     auto const& config = Configuration.get();
@@ -624,7 +625,7 @@ if (filteredPower < 0) {
 // Dynamischen Dämpfungsfaktor deklarieren
 float alpha;
 
-if (targetPower < filteredPower) {
+if (targetOutput < filteredPower) {
     // SPRECHWEISE: Neuer Sollwert ist NIEDRIGER als der alte -> Verbraucher wurde eingeschaltet!
     // Schnelles Runterrampen: Ein Wert von 0.85 reagiert fast sofort (bzw. 1.0 für 100% Echtzeit)
     alpha = 0.85f; 
@@ -635,7 +636,7 @@ if (targetPower < filteredPower) {
 }
 
 // Berechnung des asymmetrisch gedämpften Sollwerts
-filteredPower = (alpha * targetPower) + ((1.0f - alpha) * filteredPower);
+filteredPower = (alpha * targetOutput) + ((1.0f - alpha) * filteredPower);
 
 // Überschribe den Zielwert mit dem gefilterten Wert
 targetOutput = (int16_t)filteredPower;
