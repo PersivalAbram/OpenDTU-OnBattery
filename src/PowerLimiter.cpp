@@ -214,9 +214,10 @@ void PowerLimiterClass::loop()
 
     // since _lastCalculation and _calculationBackoffMs are initialized to
     // zero, this test is passed the first time the condition is checked.
-    //if ((millis() - _lastCalculation) < _calculationBackoffMs) {
-    //    return announceStatus(Status::Stable);
-    //}
+    if ((millis() - _lastCalculation) < _calculationBackoffMs) {
+        return announceStatus(Status::Stable);
+    }
+/*    
 // --- UNSERE KÜNSTLICHE ZWANGSPAUSE GEGEN TOTZEITEN ---
     static uint32_t lastMyDplTick = 0;
     // 8000 Millisekunden = 8 Sekunden absolute Ruhe für den Regelkreis
@@ -225,7 +226,7 @@ void PowerLimiterClass::loop()
     }
     lastMyDplTick = millis();
     // --- ENDE DER BREMSE ---
-
+*/
 
     auto autoRestartInverters = [this]() -> void {
         if (!_nextInverterRestart.first) { return; } // no automatic restarts
@@ -563,6 +564,13 @@ uint8_t PowerLimiterClass::getPowerLimiterState() const
 
 uint16_t PowerLimiterClass::calcTargetOutput() const
 {
+    // --- GLEITENDER MITTELWERT FÜR DEN STROMZÄHLER ---
+    #define FILTER_STEPS 10 // Anzahl der Werte zum Glätten (ca. 40 Sekunden bei 4s Takt)
+    static float valueBuffer[FILTER_STEPS] = {0};
+    static int bufferIndex = 0;
+    static bool bufferFull = false;
+
+        
     auto const& config = Configuration.get();
     auto targetConsumption = config.PowerLimiter.TargetPowerConsumption;
     auto baseLoad = config.PowerLimiter.BaseLoadLimit;
@@ -617,11 +625,43 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
         currentTotalOutput += upInv->getCurrentOutputAcWatts();
     }
 
+
+// Wir holen uns den aktuellen, nervösen Netzwert (Bezug/Einspeisung)
+    // Hinweis: Je nach genauer OpenDTU-Version heißt die Funktion evtl. PowerMeter.getPower()
+    float currentRawPower = roundedMeterValue;//PowerMeter.getCalculatedPower(); 
+
+    // Neuen Wert in den Kreisspeicher schreiben
+    valueBuffer[bufferIndex] = currentRawPower;
+    bufferIndex++;
+
+    if (bufferIndex >= FILTER_STEPS) {
+        bufferIndex = 0;
+        bufferFull = true;
+    }
+
+    // Durchschnitt berechnen
+    float sum = 0;
+    int count = bufferFull ? FILTER_STEPS : bufferIndex;
+    for (int i = 0; i < count; i++) {
+        sum += valueBuffer[i];
+    }
+    float smoothedPower = sum / count;
+
+    // JETZT TRICKEN WIR OPENDTU AUS: 
+    // Wir überschreiben den internen PowerMeter-Wert temporär mit unserem geglätteten Wert,
+    // damit alle folgenden Berechnungen in dieser Funktion mit dem ruhigen Wert arbeiten.
+    // (Falls const-Fehler auftreten, nutzen wir eine lokale Variable für die DPL-Logik)
+    // --- ENDE FILTER ---
+
+
+
+    
     // this value is negative if we are exporting more than "targetConsumption"
     // power to the grid using generators other than DPL-governed inverters.
-    int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
+    //int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
+    int16_t targetOutput = currentTotalOutput + smoothedPower - targetConsumption;
 
-
+/*
 // Am Ende der Berechnungsfunktion, bevor das neue Limit für den Lader final übernommen wird:
 
 
@@ -649,7 +689,7 @@ filteredPower = (alpha * targetOutput) + ((1.0f - alpha) * filteredPower);
 
 // Überschribe den Zielwert mit dem gefilterten Wert
 targetOutput = (int16_t)filteredPower;
-    
+*/    
 
     // if we are already exporting more power than the (negative) target
     // consumption value allows us to, we don't want DPL-governed inverters to
