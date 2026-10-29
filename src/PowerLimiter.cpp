@@ -217,16 +217,6 @@ void PowerLimiterClass::loop()
     if ((millis() - _lastCalculation) < _calculationBackoffMs) {
         return announceStatus(Status::Stable);
     }
-/*    
-// --- UNSERE KÜNSTLICHE ZWANGSPAUSE GEGEN TOTZEITEN ---
-    static uint32_t lastMyDplTick = 0;
-    // 8000 Millisekunden = 8 Sekunden absolute Ruhe für den Regelkreis
-    if (millis() - lastMyDplTick < 8000) {
-        return announceStatus(Status::Stable);
-    }
-    lastMyDplTick = millis();
-    // --- ENDE DER BREMSE ---
-*/
 
     auto autoRestartInverters = [this]() -> void {
         if (!_nextInverterRestart.first) { return; } // no automatic restarts
@@ -646,50 +636,13 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
         sum += valueBuffer[i];
     }
     float smoothedPower = sum / count;
-
-    // JETZT TRICKEN WIR OPENDTU AUS: 
-    // Wir überschreiben den internen PowerMeter-Wert temporär mit unserem geglätteten Wert,
-    // damit alle folgenden Berechnungen in dieser Funktion mit dem ruhigen Wert arbeiten.
-    // (Falls const-Fehler auftreten, nutzen wir eine lokale Variable für die DPL-Logik)
-    // --- ENDE FILTER ---
-
-
-
+    auto roundedsmoothedPower = static_cast<int16_t>(smoothedPower + (smoothedPower > 0 ? 0.5 : -0.5));
     
     // this value is negative if we are exporting more than "targetConsumption"
     // power to the grid using generators other than DPL-governed inverters.
     //int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
-    int16_t targetOutput = currentTotalOutput + smoothedPower - targetConsumption;
+    int16_t targetOutput = currentTotalOutput + roundedsmoothedPower - targetConsumption;
 
-/*
-// Am Ende der Berechnungsfunktion, bevor das neue Limit für den Lader final übernommen wird:
-
-
-// Beim allerersten Start den aktuellen Ist-Wert als Startpunkt setzen
-static float filteredPower = -1.0f; // Merkt sich den gefilterten Wert über Schleifendurchläufe hinweg
-if (filteredPower < 0) {
-    filteredPower = targetOutput; 
-}
-
-// Dynamischen Dämpfungsfaktor deklarieren
-float alpha;
-
-if (targetOutput < filteredPower) {
-    // SPRECHWEISE: Neuer Sollwert ist NIEDRIGER als der alte -> Verbraucher wurde eingeschaltet!
-    // Schnelles Runterrampen: Ein Wert von 0.85 reagiert fast sofort (bzw. 1.0 für 100% Echtzeit)
-    alpha = 0.02f; 
-} else {
-    // SPRECHWEISE: Neuer Sollwert ist HÖHER als der alte -> Überschuss steigt, Lader soll hochfahren.
-    // Langsames Hochrampen: Ein kleiner Wert von 0.15 filtert den Anstieg stark und macht ihn träge.
-    alpha = 0.02f; 
-}
-
-// Berechnung des asymmetrisch gedämpften Sollwerts
-filteredPower = (alpha * targetOutput) + ((1.0f - alpha) * filteredPower);
-
-// Überschribe den Zielwert mit dem gefilterten Wert
-targetOutput = (int16_t)filteredPower;
-*/    
 
     // if we are already exporting more power than the (negative) target
     // consumption value allows us to, we don't want DPL-governed inverters to
