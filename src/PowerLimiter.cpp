@@ -638,11 +638,21 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     float smoothedPower = sum / count;
     auto roundedsmoothedPower = static_cast<int16_t>(smoothedPower + (smoothedPower > 0 ? 0.5 : -0.5));
     roundedsmoothedPower=std::min(roundedsmoothedPower, roundedMeterValue);
+
+    // Minimum berechnen
+    float minPower = valueBuffer[0];
+    int count = bufferFull ? FILTER_STEPS : bufferIndex;
+    for (int i = 0; i < count; i++) {
+        if(minPower>valueBuffer[i] {minPower=valueBuffer[i]};
+    }
+    auto minPower_int16 = static_cast<int16_t>(minPower + (minPower > 0 ? 0.5 : -0.5));
+
     
     // this value is negative if we are exporting more than "targetConsumption"
     // power to the grid using generators other than DPL-governed inverters.
-    int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
+    //int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
     //int16_t targetOutput = currentTotalOutput + roundedsmoothedPower - targetConsumption;
+    int16_t targetOutput = currentTotalOutput + minPower_int16 - targetConsumption;
 
 
     // if we are already exporting more power than the (negative) target
