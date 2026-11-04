@@ -641,8 +641,8 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     
     // this value is negative if we are exporting more than "targetConsumption"
     // power to the grid using generators other than DPL-governed inverters.
-    //int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
-    int16_t targetOutput = currentTotalOutput + roundedsmoothedPower - targetConsumption;
+    int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
+    //int16_t targetOutput = currentTotalOutput + roundedsmoothedPower - targetConsumption;
 
 
     // if we are already exporting more power than the (negative) target
