@@ -643,7 +643,7 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     float minPower = valueBuffer[0];
     int count = bufferFull ? FILTER_STEPS : bufferIndex;
     for (int i = 0; i < count; i++) {
-        if(minPower>valueBuffer[i] {minPower=valueBuffer[i]};
+        if(minPower>valueBuffer[i]) {minPower=valueBuffer[i]};
     }
     auto minPower_int16 = static_cast<int16_t>(minPower + (minPower > 0 ? 0.5 : -0.5));
 
