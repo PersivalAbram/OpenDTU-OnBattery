@@ -559,6 +559,7 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     static float valueBuffer[FILTER_STEPS] = {0};
     static int bufferIndex = 0;
     static bool bufferFull = false;
+    static float last_meterValue=0;
 
         
     auto const& config = Configuration.get();
@@ -605,7 +606,7 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
         // assumption about unreachable inverters.
         roundedMeterValue -= upInv->getCurrentOutputAcWatts();
     }
-
+    
     int16_t currentTotalOutput = 0;
     for (auto const& upInv : _inverters) {
         // non-eligible inverters don't participate in this DPL round at all.
@@ -615,15 +616,17 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
         currentTotalOutput += upInv->getCurrentOutputAcWatts();
     }
 
-
-// Wir holen uns den aktuellen, nervösen Netzwert (Bezug/Einspeisung)
+    // Wir holen uns den aktuellen, nervösen Netzwert (Bezug/Einspeisung)
     // Hinweis: Je nach genauer OpenDTU-Version heißt die Funktion evtl. PowerMeter.getPower()
     float currentRawPower = roundedMeterValue;//PowerMeter.getCalculatedPower(); 
+    if(last_meterValue!=roundedMeterValue)
+    {
+        last_meterValue=roundedMeterValue;
 
-    // Neuen Wert in den Kreisspeicher schreiben
-    valueBuffer[bufferIndex] = currentRawPower;
-    bufferIndex++;
-
+        // Neuen Wert in den Kreisspeicher schreiben
+        valueBuffer[bufferIndex] = currentRawPower;
+        bufferIndex++;
+    }
     if (bufferIndex >= FILTER_STEPS) {
         bufferIndex = 0;
         bufferFull = true;
@@ -639,22 +642,22 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     auto roundedsmoothedPower = static_cast<int16_t>(smoothedPower + (smoothedPower > 0 ? 0.5 : -0.5));
     roundedsmoothedPower=std::min(roundedsmoothedPower, roundedMeterValue);
 
-    // Minimum berechnen
-    float minPower = valueBuffer[0];
-    int count = bufferFull ? FILTER_STEPS : bufferIndex;
-    for (int i = 0; i < count; i++) {
-        if(minPower>valueBuffer[i]) {
-            minPower=valueBuffer[i];
+    // Maximum berechnen
+    float maxPower = valueBuffer[0];
+    int count1 = bufferFull ? FILTER_STEPS : bufferIndex;
+    for (int i = 0; i < count1; i++) {
+        if(maxPower<valueBuffer[i]) {
+            maxPower=valueBuffer[i];
         }
     }
-    auto minPower_int16 = static_cast<int16_t>(minPower + (minPower > 0 ? 0.5 : -0.5));
+    auto maxPower_int16 = static_cast<int16_t>(maxPower + (maxPower > 0 ? 0.5 : -0.5));
 
     
     // this value is negative if we are exporting more than "targetConsumption"
     // power to the grid using generators other than DPL-governed inverters.
     //int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
     //int16_t targetOutput = currentTotalOutput + roundedsmoothedPower - targetConsumption;
-    int16_t targetOutput = currentTotalOutput + minPower_int16 - targetConsumption;
+    int16_t targetOutput = currentTotalOutput + maxPower_int16 - targetConsumption;
 
 
     // if we are already exporting more power than the (negative) target
