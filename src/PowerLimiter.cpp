@@ -636,6 +636,8 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
         sum += valueBuffer[i];
     }
     float smoothedPower = sum / count;
+    smoothedPower=std::min(smoothedPower, roundedMeterValue);
+    
     auto roundedsmoothedPower = static_cast<int16_t>(smoothedPower + (smoothedPower > 0 ? 0.5 : -0.5));
     
     // this value is negative if we are exporting more than "targetConsumption"
