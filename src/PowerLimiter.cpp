@@ -19,6 +19,13 @@
 #include "SunPosition.h"
 #include <LogHelper.h>
 
+#include <vector>
+#include <algorithm>
+
+// Einstellungen für die Dämpfung
+const size_t FENSTER_GROESSE = 100; // Anzahl der Messwerte (z.B. 10 Sekunden, wenn die Schleife sekündlich läuft)
+static std::vector<float> sollwertPuffer;
+
 #undef TAG
 static const char* TAG = "dynamicPowerLimiter";
 static const char* SUBTAG = "Controller";
@@ -554,14 +561,6 @@ uint8_t PowerLimiterClass::getPowerLimiterState() const
 
 uint16_t PowerLimiterClass::calcTargetOutput() const
 {
-    // --- GLEITENDER MITTELWERT FÜR DEN STROMZÄHLER ---
-    #define FILTER_STEPS 10 // Anzahl der Werte zum Glätten (ca. 40 Sekunden bei 4s Takt)
-    static float valueBuffer[FILTER_STEPS] = {0};
-    static int bufferIndex = 0;
-    static bool bufferFull = false;
-    static float last_meterValue=0;
-
-        
     auto const& config = Configuration.get();
     auto targetConsumption = config.PowerLimiter.TargetPowerConsumption;
     auto baseLoad = config.PowerLimiter.BaseLoadLimit;
@@ -578,7 +577,25 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     // the desired total output of all eligible inverters is whatever they are
     // producing right now plus the difference between the target consumption
     // and the power meter reading
-    auto roundedMeterValue = static_cast<int16_t>(meterValue + (meterValue > 0 ? 0.5 : -0.5));
+
+    // --- DEIN BESTEHENDER CODE: Hier wird der aktuelle Sollwert berechnet ---
+    float berechneterSollwert = meterValue;
+
+    // --- NEU: Dämpfung durch gleitendes Minimum ---
+
+    // 1. Aktuellen Wert in den Puffer schieben
+    sollwertPuffer.push_back(berechneterSollwert);
+
+    // 2. Puffer auf die maximale Fenstergröße begrenzen
+    if (sollwertPuffer.size() > FENSTER_GROESSE) {
+        sollwertPuffer.erase(sollwertPuffer.begin());
+    }
+
+    // 3. Den niedrigsten Wert im Zeitfenster ermitteln
+    float gedaempfterSollwert = *std::min_element(sollwertPuffer.begin(), sollwertPuffer.end());
+    
+    //auto roundedMeterValue = static_cast<int16_t>(meterValue + (meterValue > 0 ? 0.5 : -0.5));
+    auto roundedMeterValue = static_cast<int16_t>(gedaempfterSollwert + (gedaempfterSollwert > 0 ? 0.5 : -0.5));
 
     // we have to correct the meter reading if there are inverters connected to
     // AC between the grid (billing meter) and OpenDTU-OnBattery's power meter.
@@ -616,49 +633,9 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
         currentTotalOutput += upInv->getCurrentOutputAcWatts();
     }
 
-    // Wir holen uns den aktuellen, nervösen Netzwert (Bezug/Einspeisung)
-    // Hinweis: Je nach genauer OpenDTU-Version heißt die Funktion evtl. PowerMeter.getPower()
-    float currentRawPower = roundedMeterValue;//PowerMeter.getCalculatedPower(); 
-    if(last_meterValue!=roundedMeterValue)
-    {
-        last_meterValue=roundedMeterValue;
-
-        // Neuen Wert in den Kreisspeicher schreiben
-        valueBuffer[bufferIndex] = currentRawPower;
-        bufferIndex++;
-    }
-    if (bufferIndex >= FILTER_STEPS) {
-        bufferIndex = 0;
-        bufferFull = true;
-    }
-
-    // Durchschnitt berechnen
-    float sum = 0;
-    int count = bufferFull ? FILTER_STEPS : bufferIndex;
-    for (int i = 0; i < count; i++) {
-        sum += valueBuffer[i];
-    }
-    float smoothedPower = sum / count;
-    auto roundedsmoothedPower = static_cast<int16_t>(smoothedPower + (smoothedPower > 0 ? 0.5 : -0.5));
-    roundedsmoothedPower=std::min(roundedsmoothedPower, roundedMeterValue);
-
-    // Maximum berechnen
-    float maxPower = valueBuffer[0];
-    int count1 = bufferFull ? FILTER_STEPS : bufferIndex;
-    for (int i = 0; i < count1; i++) {
-        if(maxPower<valueBuffer[i]) {
-            maxPower=valueBuffer[i];
-        }
-    }
-    auto maxPower_int16 = static_cast<int16_t>(maxPower + (maxPower > 0 ? 0.5 : -0.5));
-
-    
     // this value is negative if we are exporting more than "targetConsumption"
     // power to the grid using generators other than DPL-governed inverters.
-    //int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
-    //int16_t targetOutput = currentTotalOutput + roundedsmoothedPower - targetConsumption;
-    int16_t targetOutput = currentTotalOutput + maxPower_int16 - targetConsumption;
-
+    int16_t targetOutput = currentTotalOutput + roundedMeterValue - targetConsumption;
 
     // if we are already exporting more power than the (negative) target
     // consumption value allows us to, we don't want DPL-governed inverters to
