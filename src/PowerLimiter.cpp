@@ -25,7 +25,7 @@
 // Einstellungen für die Dämpfung
 const size_t FENSTER_GROESSE = 50; // Anzahl der Messwerte (z.B. 10 Sekunden, wenn die Schleife sekündlich läuft)
 static std::vector<float> sollwertPuffer;
-static float fLastSollwert;
+static float fLastSollwert = 99999;
 
 #undef TAG
 static const char* TAG = "dynamicPowerLimiter";
