@@ -22,14 +22,6 @@
 #include "RuntimeData.h"
 #include <esp_system.h>
 
-#include <vector>
-#include <algorithm>
-
-// Einstellungen für die Dämpfung
-const size_t FENSTER_GROESSE = 50; // Anzahl der Messwerte (z.B. 10 Sekunden, wenn die Schleife sekündlich läuft)
-static std::vector<float> sollwertPuffer;
-static float fLastSollwert = 99999;
-
 #undef TAG
 static const char* TAG = "dynamicPowerLimiter";
 static const char* SUBTAG = "Controller";
@@ -607,27 +599,7 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     // producing right now plus the difference between the target consumption
     // and the power meter reading
 
-    // --- DEIN BESTEHENDER CODE: Hier wird der aktuelle Sollwert berechnet ---
-    float berechneterSollwert = meterValue;
-
-    // --- NEU: Dämpfung durch gleitendes Minimum ---
-
-    // 1. Aktuellen Wert in den Puffer schieben
-    if(fLastSollwert!=berechneterSollwert)
-    {
-      fLastSollwert=berechneterSollwert;
-      sollwertPuffer.push_back(berechneterSollwert);
-      // 2. Puffer auf die maximale Fenstergröße begrenzen
-      if (sollwertPuffer.size() > FENSTER_GROESSE) {
-          sollwertPuffer.erase(sollwertPuffer.begin());
-      }
-    }
-
-    // 3. Den niedrigsten Wert im Zeitfenster ermitteln
-    float gedaempfterSollwert = *std::min_element(sollwertPuffer.begin(), sollwertPuffer.end());
-    
-    //auto roundedMeterValue = static_cast<int16_t>(meterValue + (meterValue > 0 ? 0.5 : -0.5));
-    auto roundedMeterValue = static_cast<int16_t>(gedaempfterSollwert + (gedaempfterSollwert > 0 ? 0.5 : -0.5));
+    auto roundedMeterValue = static_cast<int16_t>(meterValue + (meterValue > 0 ? 0.5 : -0.5));
 
     // we have to correct the meter reading if there are inverters connected to
     // AC between the grid (billing meter) and OpenDTU-OnBattery's power meter.
