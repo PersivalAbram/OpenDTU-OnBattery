@@ -584,7 +584,7 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     // --- NEU: Dämpfung durch gleitendes Minimum ---
 
     // 1. Aktuellen Wert in den Puffer schieben
-    if(sollwertPuffer.back()<>berechneterSollwert)
+    if(sollwertPuffer.back()!=berechneterSollwert)
     {
       sollwertPuffer.push_back(berechneterSollwert);
     }
