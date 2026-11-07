@@ -23,8 +23,9 @@
 #include <algorithm>
 
 // Einstellungen für die Dämpfung
-const size_t FENSTER_GROESSE = 100; // Anzahl der Messwerte (z.B. 10 Sekunden, wenn die Schleife sekündlich läuft)
+const size_t FENSTER_GROESSE = 50; // Anzahl der Messwerte (z.B. 10 Sekunden, wenn die Schleife sekündlich läuft)
 static std::vector<float> sollwertPuffer;
+static float fLastSollwert;
 
 #undef TAG
 static const char* TAG = "dynamicPowerLimiter";
@@ -584,14 +585,14 @@ uint16_t PowerLimiterClass::calcTargetOutput() const
     // --- NEU: Dämpfung durch gleitendes Minimum ---
 
     // 1. Aktuellen Wert in den Puffer schieben
-    if(sollwertPuffer.back()!=berechneterSollwert)
+    if(fLastSollwert!=berechneterSollwert)
     {
+      fLastSollwert=berechneterSollwert;
       sollwertPuffer.push_back(berechneterSollwert);
-    }
-
-    // 2. Puffer auf die maximale Fenstergröße begrenzen
-    if (sollwertPuffer.size() > FENSTER_GROESSE) {
-        sollwertPuffer.erase(sollwertPuffer.begin());
+      // 2. Puffer auf die maximale Fenstergröße begrenzen
+      if (sollwertPuffer.size() > FENSTER_GROESSE) {
+          sollwertPuffer.erase(sollwertPuffer.begin());
+      }
     }
 
     // 3. Den niedrigsten Wert im Zeitfenster ermitteln
