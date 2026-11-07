@@ -12,6 +12,8 @@
 #include <LogHelper.h>
 #include <MqttSettings.h>
 #include <Utils.h>
+#include <vector>
+#include <algorithm>
 
 #undef TAG
 static const char* TAG = "gridCharger";
@@ -266,6 +268,48 @@ void Provider::loop()
                 }
             }
 
+
+
+            // =========================================================================
+            // START: Asymmetrische Dämpfung (Langsames Hochfahren / Sofortiges Absenken)
+            // =========================================================================
+            // FENSTER_GROESSE bestimmt das Zeitfenster für das Hochrampen. 
+            // Höherer Wert = noch langsameres Hochrampen. (Empfehlung: 15 bis 25)
+            const size_t FENSTER_GROESSE = 50; 
+            static std::vector<float> huaweiPowerPuffer;
+
+            // Wenn das System den Lader ohnehin komplett abschalten will (z.B. Wolke oder SoC erreicht),
+            // leeren wir den Puffer, damit er beim nächsten Start sofort von 0 sauber hochrampt.
+            if (newOutputPowerTarget <= 0) {
+                huaweiPowerPuffer.clear();
+                huaweiPowerPuffer.push_back(0);
+            } else {
+                huaweiPowerPuffer.push_back(newOutputPowerTarget);
+            }
+
+            // Puffergröße auf das definierte Zeitfenster begrenzen
+            if (huaweiPowerPuffer.size() > FENSTER_GROESSE) {
+                huaweiPowerPuffer.erase(huaweiPowerPuffer.begin());
+            }
+
+            // std::min_element sorgt für den Trick: Einbrechende Werte (Verbraucher an) 
+            // werden SOFORT aktiv. Steigende Werte (Überschuss) müssen erst das Fenster füllen.
+            float gedaempftesPowerTarget = *std::min_element(huaweiPowerPuffer.begin(), huaweiPowerPuffer.end());
+            
+            if (gedaempftesPowerTarget != newOutputPowerTarget) {
+                DTU_LOGD("AC-Loader Dämpfung aktiv - DPL-Rohwert: %.0fW -> Gedämpftes Minimum: %.0fW", 
+                         newOutputPowerTarget, gedaempftesPowerTarget);
+            }
+            
+            newOutputPowerTarget = gedaempftesPowerTarget;
+            // =========================================================================
+            // ENDE DER DÄMPFUNG
+            // =========================================================================
+
+
+
+
+            
             if (newOutputPowerTarget > config.GridCharger.AutoPowerLowerPowerLimit) {
                 // Check if the output power has dropped below the lower limit (i.e. the battery is full)
                 // and if the PSU should be turned off. Also we use a simple counter mechanism here to be able
