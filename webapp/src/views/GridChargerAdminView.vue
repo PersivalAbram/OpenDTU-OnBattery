@@ -222,6 +222,19 @@
                 />
 
                 <InputElement
+                    :label="$t('gridchargeradmin.filterWindow')"
+                    :tooltip="$t('gridchargeradmin.filterWindowHint')"
+                    v-model="gridChargerConfigList.filter_window"
+                    v-if="gridChargerConfigList.provider === 0"
+                    postfix="Zyklen"
+                    type="number"
+                    wide
+                    required
+                    min="1"
+                    max="120"
+                />
+
+                <InputElement
                     :label="$t('gridchargeradmin.targetPowerConsumption')"
                     :tooltip="$t('gridchargeradmin.targetPowerConsumptionHint')"
                     v-model="gridChargerConfigList.target_power_consumption"
