@@ -313,6 +313,7 @@ struct GRID_CHARGER_CONFIG_T {
     float AutoPowerEnableVoltageLimit;
     float AutoPowerLowerPowerLimit;
     float AutoPowerUpperPowerLimit;
+    uint32_t AutoPowerFilterWindow; // Fenstergröße für die Dämpfung
     uint8_t AutoPowerStopBatterySoCThreshold;
     float AutoPowerTargetPowerConsumption;
     GridChargerProviderType Provider;

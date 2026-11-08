@@ -265,6 +265,7 @@ void ConfigurationClass::serializeGridChargerConfig(GridChargerConfig const& sou
     target["enable_voltage_limit"] = roundedFloat(source.AutoPowerEnableVoltageLimit);
     target["lower_power_limit"] = source.AutoPowerLowerPowerLimit;
     target["upper_power_limit"] = source.AutoPowerUpperPowerLimit;
+    target["filter_window"] = source.AutoPowerFilterWindow;
     target["stop_batterysoc_threshold"] = source.AutoPowerStopBatterySoCThreshold;
     target["target_power_consumption"] = source.AutoPowerTargetPowerConsumption;
 }
@@ -734,6 +735,7 @@ void ConfigurationClass::deserializeGridChargerConfig(JsonObject const& source, 
     target.AutoPowerEnableVoltageLimit =  source["enable_voltage_limit"] | GRIDCHARGER_AUTO_POWER_ENABLE_VOLTAGE_LIMIT;
     target.AutoPowerLowerPowerLimit = source["lower_power_limit"] | GRIDCHARGER_AUTO_POWER_LOWER_POWER_LIMIT;
     target.AutoPowerUpperPowerLimit = source["upper_power_limit"] | GRIDCHARGER_AUTO_POWER_UPPER_POWER_LIMIT;
+    target.AutoPowerFilterWindow  = source["filter_window"] | 6;
     target.AutoPowerStopBatterySoCThreshold = source["stop_batterysoc_threshold"] | GRIDCHARGER_AUTO_POWER_STOP_BATTERYSOC_THRESHOLD;
     target.AutoPowerTargetPowerConsumption = source["target_power_consumption"] | GRIDCHARGER_AUTO_POWER_TARGET_POWER_CONSUMPTION;
 }
