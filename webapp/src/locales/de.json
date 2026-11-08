@@ -766,7 +766,7 @@
         "UpperPowerLimit": "Maximales Leistungslimit",
         "UpperPowerLimitHint": "Der Wechselrichter wird stets so eingestellt, dass höchstens diese Ausgangsleistung erreicht wird. Dieser Wert muss so gewählt werden, dass die Strombelastbarkeit der AC-Anschlussleitungen eingehalten wird.",
         "filterWindow": "Dämpfungs-Zeitfenster",
-        "filterWindowHint": "Bestimmt, wie viele Zyklen der Lader beim Hochrampen verzögert. Einbrechender Überschuss regelt weiterhin sofort ab. (Standard: 20)"
+        "filterWindowHint": "Bestimmt, wie viele Zyklen der Lader beim Hochrampen verzögert. Einbrechender Überschuss regelt weiterhin sofort ab. (Standard: 6)"
         "AllowStandby": "Standby erlauben",
         "AllowStandbyHint": "Erlaubt dem Wechselrichter in Standby zu gehen, wenn das berechnete Leistungslimit unter dem minimalen Leistungslimit liegt. Ansonsten wird der Wechselrichter auf das minimale Leistungslimit gesetzt.",
         "SocThresholds": "Batterie State of Charge (SoC) Schwellwerte",
