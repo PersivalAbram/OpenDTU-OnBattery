@@ -275,7 +275,7 @@ void Provider::loop()
             // =========================================================================
             // FENSTER_GROESSE bestimmt das Zeitfenster für das Hochrampen. 
             // Höherer Wert = noch langsameres Hochrampen. (Empfehlung: 15 bis 25)
-            const size_t FENSTER_GROESSE = 50; 
+            const size_t FENSTER_GROESSE = 10; 
             static std::vector<float> huaweiPowerPuffer;
 
             // Wenn das System den Lader ohnehin komplett abschalten will (z.B. Wolke oder SoC erreicht),
