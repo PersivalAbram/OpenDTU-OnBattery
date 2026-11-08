@@ -1311,6 +1311,7 @@ void ConfigurationClass::migrateOnBattery()
         config.GridCharger.AutoPowerEnableVoltageLimit = huawei["enable_voltage_limit"] | GRIDCHARGER_AUTO_POWER_ENABLE_VOLTAGE_LIMIT;
         config.GridCharger.AutoPowerLowerPowerLimit = huawei["lower_power_limit"] | GRIDCHARGER_AUTO_POWER_LOWER_POWER_LIMIT;
         config.GridCharger.AutoPowerUpperPowerLimit = huawei["upper_power_limit"] | GRIDCHARGER_AUTO_POWER_UPPER_POWER_LIMIT;
+        config.GridCharger.AutoPowerFilterWindow = huawei["filter_window"] | 6;
         config.GridCharger.AutoPowerStopBatterySoCThreshold = huawei["stop_batterysoc_threshold"] | GRIDCHARGER_AUTO_POWER_STOP_BATTERYSOC_THRESHOLD;
         config.GridCharger.AutoPowerTargetPowerConsumption = huawei["target_power_consumption"] | GRIDCHARGER_AUTO_POWER_TARGET_POWER_CONSUMPTION;
         config.GridCharger.Can.Controller_Frequency = huawei["can_controller_frequency"] | GRIDCHARGER_CAN_CONTROLLER_FREQUENCY;
