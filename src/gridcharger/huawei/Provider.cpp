@@ -275,7 +275,8 @@ void Provider::loop()
             // =========================================================================
             // FENSTER_GROESSE bestimmt das Zeitfenster für das Hochrampen. 
             // Höherer Wert = noch langsameres Hochrampen. (Empfehlung: 15 bis 25)
-            const size_t FENSTER_GROESSE = 6; 
+            //const size_t FENSTER_GROESSE = 6; 
+            size_t fensterGroesse = config.GridCharger.AutoPowerFilterWindow > 0 ? config.GridCharger.AutoPowerFilterWindow : 1;
             static std::vector<float> huaweiPowerPuffer;
 
             // Wenn das System den Lader ohnehin komplett abschalten will (z.B. Wolke oder SoC erreicht),
@@ -288,7 +289,7 @@ void Provider::loop()
             }
 
             // Puffergröße auf das definierte Zeitfenster begrenzen
-            if (huaweiPowerPuffer.size() > FENSTER_GROESSE) {
+            if (huaweiPowerPuffer.size() > fensterGroesse) {
                 huaweiPowerPuffer.erase(huaweiPowerPuffer.begin());
             }
 
